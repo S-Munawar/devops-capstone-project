@@ -6,3 +6,4 @@ factory_boy>=3.3.0
 nose2>=0.14.0
 coverage>=7.0.0
 nose2[coverage-plugin]>=0.14.0
+flake8>=6.0.0
