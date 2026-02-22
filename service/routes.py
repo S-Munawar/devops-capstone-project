@@ -18,6 +18,20 @@ logger = logging.getLogger("flask.app")
 
 
 ######################################################################
+# I N D E X
+######################################################################
+
+
+@app.route("/")
+def index():
+    """Root URL — returns service info."""
+    return jsonify(
+        name="Customer Accounts REST API Service",
+        version="1.0",
+    ), HTTP_200_OK
+
+
+######################################################################
 # H E A L T H   C H E C K
 ######################################################################
 
@@ -26,6 +40,7 @@ logger = logging.getLogger("flask.app")
 def health():
     """Health endpoint — used by load-balancers / orchestration."""
     return jsonify(status="OK"), HTTP_200_OK
+
 
 
 ######################################################################

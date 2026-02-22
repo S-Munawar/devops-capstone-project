@@ -20,12 +20,14 @@ from unittest import TestCase
 # -----------------------------------------------------------------------
 os.environ["DATABASE_URI"] = "sqlite:///:memory:"
 
-from service import app  # noqa: E402
+from service import app, talisman  # noqa: E402
 from service.models import db, Account  # noqa: E402
+from service.common import status  # noqa: E402
 from tests.factories import AccountFactory  # noqa: E402
 
 BASE_URL = "/accounts"
 CONTENT_TYPE_JSON = "application/json"
+HTTPS_ENVIRON = {'wsgi.url_scheme': 'https'}
 
 logging.disable(logging.CRITICAL)
 
@@ -48,6 +50,7 @@ class TestAccountService(TestCase):
         app.config["TESTING"] = True
         app.config["DEBUG"] = False
         app.logger.setLevel(logging.CRITICAL)
+        talisman.force_https = False
 
     @classmethod
     def tearDownClass(cls):
@@ -168,6 +171,26 @@ class TestAccountService(TestCase):
         # DELETE on the collection URL is not routed → 405
         response = self.client.delete(BASE_URL)
         self.assertEqual(response.status_code, 405)
+
+    def test_security_headers(self):
+        """It should return security headers"""
+        response = self.client.get('/', environ_overrides=HTTPS_ENVIRON)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        headers = {
+            'X-Frame-Options': 'SAMEORIGIN',
+            'X-Content-Type-Options': 'nosniff',
+            'Content-Security-Policy': "default-src 'self'; object-src 'none'",
+            'Referrer-Policy': 'strict-origin-when-cross-origin',
+        }
+        for key, value in headers.items():
+            self.assertEqual(response.headers.get(key), value)
+
+    def test_cors_security(self):
+        """It should return a CORS header"""
+        response = self.client.get('/', environ_overrides=HTTPS_ENVIRON)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Check for the CORS header
+        self.assertEqual(response.headers.get('Access-Control-Allow-Origin'), '*')
 
 
 ######################################################################
