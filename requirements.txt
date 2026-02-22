@@ -9,3 +9,4 @@ nose2[coverage-plugin]>=0.14.0
 flake8>=6.0.0
 flask-talisman>=1.1.0
 flask-cors>=4.0.0
+gunicorn>=21.2.0

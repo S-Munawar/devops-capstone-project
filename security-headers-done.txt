@@ -1,0 +1,24 @@
+INFO:service:Customer Accounts Service starting...
+test_cors_security (tests.test_accounts.TestAccountService.test_cors_security)
+It should return a CORS header ... ok
+test_create_account (tests.test_accounts.TestAccountService.test_create_account)
+It should Create a new Account ... ok
+test_delete_account (tests.test_accounts.TestAccountService.test_delete_account)
+It should Delete an Account ... ok
+test_get_account (tests.test_accounts.TestAccountService.test_get_account)
+It should Read a single Account ... ok
+test_get_account_not_found (tests.test_accounts.TestAccountService.test_get_account_not_found)
+It should not Read an Account that is not found ... ok
+test_list_accounts (tests.test_accounts.TestAccountService.test_list_accounts)
+It should Get a list of Accounts ... ok
+test_method_not_allowed (tests.test_accounts.TestAccountService.test_method_not_allowed)
+It should not allow an illegal method call ... ok
+test_security_headers (tests.test_accounts.TestAccountService.test_security_headers)
+It should return security headers ... ok
+test_update_account (tests.test_accounts.TestAccountService.test_update_account)
+It should Update an existing Account ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 0.061s
+
+OK
