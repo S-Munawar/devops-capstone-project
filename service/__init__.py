@@ -20,6 +20,8 @@ from service.models import db, init_db  # noqa: E402
 init_db(app)
 from service import routes  # noqa: F401, E402
 from service.common import error_handlers  # noqa: F401, E402
+
+
 @app.cli.command("db-create")
 def db_create():
     """Drop all tables and re-create them (WARNING: destroys data)."""
