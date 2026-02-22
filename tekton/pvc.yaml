@@ -1,0 +1,13 @@
+##############################################################################
+# Tekton Pipeline — Shared Workspace PVC
+##############################################################################
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pipelinerun-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Mi

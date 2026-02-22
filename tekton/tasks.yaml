@@ -1,0 +1,73 @@
+##############################################################################
+# Tekton Tasks
+# 1. nose  — runs Python unit tests via nose2
+# 2. deploy-kubectl — applies Kubernetes manifests using kubectl
+##############################################################################
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: nose
+spec:
+  description: This task will run nose2 unit tests on the provided input.
+  workspaces:
+    - name: source
+  params:
+    - name: args
+      description: Arguments to pass to nose2
+      type: string
+      default: "-v"
+    - name: database_uri
+      description: Database connection string
+      type: string
+      default: "sqlite:///test.db"
+  steps:
+    - name: nosetests
+      image: python:3.9-slim
+      workingDir: $(workspaces.source.path)
+      env:
+        - name: DATABASE_URI
+          value: $(params.database_uri)
+      script: |
+        #!/bin/bash
+        set -e
+        echo "***** Installing dependencies *****"
+        python -m pip install --upgrade pip wheel
+        pip install -qr requirements.txt
+        echo "***** Running tests with: $(params.args)"
+        python -m nose2 $(params.args)
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: deploy-kubectl
+spec:
+  description: >
+    Deploys the application by substituting the image name in deployment.yaml
+    and applying all manifests in the deploy/ directory using kubectl.
+  workspaces:
+    - name: manifest-dir
+  params:
+    - name: build-image
+      description: Full image name (registry/repo:tag) to deploy
+      type: string
+  steps:
+    - name: deploy
+      image: bitnami/kubectl:latest
+      workingDir: $(workspaces.manifest-dir.path)
+      securityContext:
+        runAsUser: 0
+      script: |
+        #!/bin/bash
+        set -e
+        echo "===== Updating image reference in deployment.yaml ====="
+        sed -i "s|IMAGE_NAME_HERE|$(params.build-image)|g" deploy/deployment.yaml
+        echo "===== Current deployment.yaml ====="
+        cat deploy/deployment.yaml
+        echo "===== Applying manifests ====="
+        kubectl apply -f deploy/
+        echo "===== Deployment status ====="
+        kubectl rollout status deployment/accounts --timeout=120s
+        kubectl get pods -l app=accounts

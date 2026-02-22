@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: accounts
-          image: shaikmunawar/accounts:1
+          image: IMAGE_NAME_HERE
           imagePullPolicy: Always
           ports:
             - containerPort: 8080

@@ -1,0 +1,108 @@
+##############################################################################
+# Tekton CD Pipeline — cd-pipeline
+#
+# Stages (DAG):
+#   clone ──┬── lint ──┐
+#           └── tests ─┴── build ── deploy
+#
+# Adapated for local Kubernetes + Docker Hub (no OpenShift required).
+##############################################################################
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: cd-pipeline
+spec:
+  params:
+    - name: repo-url
+      description: Git repository URL to clone
+      type: string
+    - name: branch
+      description: Git branch to build
+      type: string
+      default: "main"
+    - name: build-image
+      description: "Full image name to build and push, e.g. docker.io/myuser/accounts:latest"
+      type: string
+
+  workspaces:
+    - name: pipeline-workspace
+
+  tasks:
+    # ── 1. CLONE ────────────────────────────────────────────────────────────
+    - name: clone
+      workspaces:
+        - name: output
+          workspace: pipeline-workspace
+      taskRef:
+        name: git-clone
+      params:
+        - name: url
+          value: $(params.repo-url)
+        - name: revision
+          value: $(params.branch)
+        - name: deleteExisting
+          value: "true"
+
+    # ── 2. LINT (parallel with tests) ───────────────────────────────────────
+    - name: lint
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+      taskRef:
+        name: flake8
+      params:
+        - name: image
+          value: "python:3.9-slim"
+        - name: args
+          value:
+            - "--count"
+            - "--max-complexity=10"
+            - "--max-line-length=127"
+            - "--statistics"
+      runAfter:
+        - clone
+
+    # ── 3. TESTS (parallel with lint) ───────────────────────────────────────
+    - name: tests
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+      taskRef:
+        name: nose
+      params:
+        - name: database_uri
+          value: "sqlite:///test.db"
+        - name: args
+          value: "-v"
+      runAfter:
+        - clone
+
+    # ── 4. BUILD (fan-in: waits for both lint AND tests) ────────────────────
+    - name: build
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+      taskRef:
+        name: kaniko
+      params:
+        - name: IMAGE
+          value: $(params.build-image)
+        - name: EXTRA_ARGS
+          value:
+            - "--skip-tls-verify"
+      runAfter:
+        - lint
+        - tests
+
+    # ── 5. DEPLOY ────────────────────────────────────────────────────────────
+    - name: deploy
+      workspaces:
+        - name: manifest-dir
+          workspace: pipeline-workspace
+      taskRef:
+        name: deploy-kubectl
+      params:
+        - name: build-image
+          value: $(params.build-image)
+      runAfter:
+        - build
